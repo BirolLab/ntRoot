@@ -25,7 +25,7 @@ jobs:
       source $HOME/miniforge3/etc/profile.d/conda.sh
       conda activate ntroot_CI
       conda install --yes -c conda-forge -c bioconda mamba
-      mamba install --yes -c conda-forge -c bioconda meson ninja snakemake perl 'ntedit>=2.0.1' samtools bedtools libcxx llvm btllib zlib boost cmake compilers
+      mamba install --yes -c conda-forge -c bioconda meson ninja snakemake perl 'ntedit>=2.0.1' samtools bedtools libcxx llvm btllib zlib boost cmake compilers plotly
     displayName: Create and install Conda environment
   
   - script: |
@@ -61,7 +61,7 @@ jobs:
       source $HOME/miniforge3/etc/profile.d/conda.sh
       conda activate ntroot_CI
       conda install --yes -c conda-forge -c bioconda mamba
-      mamba install --yes -c conda-forge -c bioconda snakemake perl 'ntedit>=2.0.1' samtools bedtools libcxx llvm meson ninja btllib zlib boost cmake compilers
+      mamba install --yes -c conda-forge -c bioconda snakemake perl 'ntedit>=2.0.1' samtools bedtools libcxx llvm meson ninja btllib zlib boost cmake compilers plotly
     displayName: Create and install Conda environment
   
   - script: |
@@ -72,3 +72,6 @@ jobs:
       cd demo
       ./run_ntroot_demo.sh
     displayName: Run ntRoot test
+
+  - publish:
+      artifact: ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html

@@ -53,6 +53,7 @@ No compilation is required for ntRoot (only the dependencies), so simply add the
 - [snakemake](https://snakemake.readthedocs.io/en/stable/)
 - [samtools](https://www.htslib.org/)
 - [bedtools](https://bedtools.readthedocs.io/en/latest/)
+- [plotly](https://plotly.com/)
 
 
 ## Usage <a name=usage></a>
