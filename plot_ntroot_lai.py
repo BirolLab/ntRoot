@@ -76,9 +76,9 @@ def read_fai(fai_path):
     This function updates the global CHR_LENGTHS dictionary with values
     from the provided .fai file, overriding the default GRCh38 lengths.
     """
-
     global CHR_LENGTHS
-
+    CHR_LENGTHS = {}
+    
     with open(fai_path, "r") as f:
         for line in f:
             parts = line.strip().split("\t")
