@@ -5,14 +5,13 @@ RLW 06/2026
 """
 
 import pandas as pd
-import numpy as np
 import plotly.graph_objects as go
-import plotly.express as px
 import os
 import argparse
 
 
 # Define parameters / assumes GRCh38
+# Can be overriden using --fai option to read chromosome lengths from a FASTA index file
 CHR_LENGTHS = {
     "1":248956422,"2":242193529,"3":198295559,"4":190214555,
     "5":181538259,"6":170805979,"7":159345973,"8":145138636,
@@ -151,7 +150,7 @@ def parse_args():
 # -----------------------------
 def extract_sample_name(path):
     """
-    Extract a sample identifier from an ntRoot/korus LAI TSV filename.
+    Extract a sample identifier from an ntRoot LAI TSV filename.
 
     The sample name is assumed to be the leading token before the first
     underscore ('_'). If no underscore exists, the leading token before
@@ -177,7 +176,7 @@ def extract_sample_name(path):
 # -----------------------------
 def load_data(path):
     """
-    Load and validate an ntRoot/korus LAI tile-resolution TSV file.
+    Load and validate an ntRoot LAI tile-resolution TSV file.
 
     The input table is expected to contain:
       - chrom
@@ -235,7 +234,7 @@ def build_angles():
 # -----------------------------
 def build(df, out_html, input_tsv, predictor):
     """
-    Construct the interactive ntRoot/korus Local Ancestry (LAI) visualization.
+    Construct the interactive ntRoot Local Ancestry (LAI) visualization.
 
     The figure contains four major components:
 
@@ -262,7 +261,7 @@ def build(df, out_html, input_tsv, predictor):
     Parameters
     ----------
     df : pandas.DataFrame
-        Parsed ntRoot/korus LAI tile-resolution table.
+        Parsed ntRoot LAI tile-resolution table.
 
     out_html : str
         Output HTML file path.
@@ -302,7 +301,6 @@ def build(df, out_html, input_tsv, predictor):
 
         fig.add_trace(
                 go.Scatterpolar(
-                #r=[0.01, 1.05],
                 r=[0.2, 1.05],
                 theta=[a0, a0],
                 mode="lines",
@@ -670,6 +668,10 @@ def main():
     [predictor]
         Optional predictor name displayed in the title
         (default: ntRoot).
+        
+    --fai
+        Optional FASTA index file to specify chromosome lengths
+        (overrides built-in GRCh38).
 
     The TSV is loaded, converted into an interactive circular LAI plot,
     and written as a standalone HTML document.
