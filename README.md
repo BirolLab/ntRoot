@@ -54,6 +54,7 @@ No compilation is required for ntRoot (only the dependencies), so simply add the
 - [samtools](https://www.htslib.org/)
 - [bedtools](https://bedtools.readthedocs.io/en/latest/)
 - [plotly](https://plotly.com/)
+- [pandas](https://pandas.pydata.org/)
 
 
 ## Usage <a name=usage></a>

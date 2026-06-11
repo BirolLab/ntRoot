@@ -25,7 +25,7 @@ jobs:
       source $HOME/miniforge3/etc/profile.d/conda.sh
       conda activate ntroot_CI
       conda install --yes -c conda-forge -c bioconda mamba
-      mamba install --yes -c conda-forge -c bioconda meson ninja snakemake perl 'ntedit>=2.0.1' samtools bedtools libcxx llvm btllib zlib boost cmake compilers plotly
+      mamba install --yes -c conda-forge -c bioconda meson ninja snakemake perl 'ntedit>=2.0.1' samtools bedtools libcxx llvm btllib zlib boost cmake compilers plotly pandas
     displayName: Create and install Conda environment
   
   - script: |
@@ -64,7 +64,7 @@ jobs:
       source $HOME/miniforge3/etc/profile.d/conda.sh
       conda activate ntroot_CI
       conda install --yes -c conda-forge -c bioconda mamba
-      mamba install --yes -c conda-forge -c bioconda snakemake perl 'ntedit>=2.0.1' samtools bedtools libcxx llvm meson ninja btllib zlib boost cmake compilers plotly
+      mamba install --yes -c conda-forge -c bioconda snakemake perl 'ntedit>=2.0.1' samtools bedtools libcxx llvm meson ninja btllib zlib boost cmake compilers plotly pandas
     displayName: Create and install Conda environment
   
   - script: |
