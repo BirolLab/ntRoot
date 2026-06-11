@@ -37,6 +37,9 @@ jobs:
       cd demo
       ./run_ntroot_demo.sh
     displayName: Run ntRoot test
+  
+  - publish: demo/ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
+    artifact: demo/ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
 
 - job:
   displayName: macOS-latest
@@ -73,5 +76,5 @@ jobs:
       ./run_ntroot_demo.sh
     displayName: Run ntRoot test
 
-  - publish: ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
-    artifact: ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
+  - publish: demo/ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
+    artifact: demo/ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
