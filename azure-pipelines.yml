@@ -39,7 +39,7 @@ jobs:
     displayName: Run ntRoot test
   
   - publish: demo/ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
-    artifact: demo/ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
+    artifact: ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
 
 - job:
   displayName: macOS-latest
@@ -77,4 +77,4 @@ jobs:
     displayName: Run ntRoot test
 
   - publish: demo/ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
-    artifact: demo/ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
+    artifact: ERR3239334.chr21__ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html
