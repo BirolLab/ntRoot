@@ -13,7 +13,7 @@ if [ ! -f ERR3239334.chr21_2.fq.gz ]; then
 	wget https://www.bcgsc.ca/downloads/btl/ntroot/reads_demo/ERR3239334.chr21_2.fq.gz
 fi
 
-ntroot --reference chr21.fa --reads ERR3239334.chr21_ -k 55 -l pop-spec-snp_chr21.vcf.gz
+ntroot --reference chr21.fa --reads ERR3239334.chr21_ -k 55 -l pop-spec-snp_chr21.vcf.gz --lai
 
 prediction=$(cat ERR3239334.chr21__ntedit_k55_variants.vcf_ancestry-predictions_tile5000000.tsv | grep -v "#" | awk '{print $1}' |head -n 2 |tail -n 1)
 

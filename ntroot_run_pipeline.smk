@@ -219,7 +219,8 @@ rule ancestry_prediction_lai:
 
         plot_ntroot_lai.py \
             {output.lai_output} \
-            {output.html_output}
+            {output.html_output} \
+            --fai {input.ref_fai}
         """ 
 
 rule sort_vcf_input:
