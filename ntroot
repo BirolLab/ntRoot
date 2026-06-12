@@ -11,7 +11,7 @@ import subprocess
 from packaging import version
 import snakemake
 
-NTROOT_VERSION = "v1.2.0"
+NTROOT_VERSION = "v1.2.2"
 
 def set_up_parser():
     "Set-up the ntRoot argparse parser"
