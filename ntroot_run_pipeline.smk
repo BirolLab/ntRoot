@@ -202,13 +202,26 @@ rule ancestry_prediction_lai:
         vcf = "{vcf}",
         ref_fai = f"{draft_base}.fai"
     output: 
-        lai_output = "{vcf}_ancestry-predictions-tile-resolution_tile{tile_size}.tsv"
+        lai_output = "{vcf}_ancestry-predictions-tile-resolution_tile{tile_size}.tsv",
+        html_output = "{vcf}_ntroot-lai-interactive_tile{tile_size}.html" 
     params:
         benchmark = f"{time_command} ancestry_prediction_tile{tile_size}.time" if input_vcf_basename else f"{time_command} ancestry_prediction_k{k}_tile{tile_size}.time",
         tile_size = tile_size,
         verbosity = v
     shell:
-        "{params.benchmark} ntRootAncestryPredictor.pl -f {input.vcf} -t {params.tile_size} -v {params.verbosity} -r 1 -i {input.ref_fai}"
+        """
+        {params.benchmark} ntRootAncestryPredictor.pl \
+            -f {input.vcf} \
+            -t {params.tile_size} \
+            -v {params.verbosity} \
+            -r 1 \
+            -i {input.ref_fai}
+
+        plot_ntroot_lai.py \
+            {output.lai_output} \
+            {output.html_output} \
+            --fai {input.ref_fai}
+        """ 
 
 rule sort_vcf_input:
     input: vcf = f"{input_vcf}"
