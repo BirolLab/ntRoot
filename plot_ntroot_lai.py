@@ -310,12 +310,13 @@ def build(df, out_html, input_tsv, predictor):
 
         fig.add_trace(
                 go.Scatterpolar(
-                r=[0.55, 1.05],
-                theta=[a0, a0],
-                mode="lines",
-                line=dict(color="rgba(80,80,80,0.35)", width=1),
-                hoverinfo="skip",
-                showlegend=False
+                    r=[0.55, 1.05],
+                    theta=[a0, a0],
+                    mode="lines",
+                    line=dict(color="rgba(80,80,80,0.35)", width=1),
+                    hoverinfo="skip",
+                    showlegend=False,
+                    meta="BACKBONE_SEPARATOR"
                 )
         )
 
