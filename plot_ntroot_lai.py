@@ -576,6 +576,14 @@ function highlight(activeChrom, activeAnc){
             continue;
         }
 
+        // -------------------------
+        // NEVER DIM BACKBONE ELEMENTS
+        // -------------------------
+        if (tr.meta.startsWith("BACKBONE")) {
+            op.push(1.0);
+            continue;
+        }
+
         const [anc, chr] = tr.meta.split("|");
 
         // -------------------------
@@ -583,19 +591,10 @@ function highlight(activeChrom, activeAnc){
         // -------------------------
         if (modeChrom) {
             const keep = (chr === activeChrom);
-
-            // backbone behavior
-            if (tr.meta.startsWith("BACKBONE")) {
-               const chrID = tr.meta.split("|")[1];
-               const keep = (chrID === activeChrom);
-               op.push(keep ? 1.0 : 0.25);
-               continue;
-            }
-
-            // LAI tracks
             op.push(keep ? 1.0 : 0.05);
             continue;
         }
+
         // -------------------------
         // ANC MODE
         // -------------------------
