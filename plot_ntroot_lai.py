@@ -577,12 +577,21 @@ function highlight(activeChrom, activeAnc){
         }
 
         // -------------------------
-        // NEVER DIM BACKBONE ELEMENTS
+        // BACKBONE CHROMOSOMES
         // -------------------------
         if (tr.meta.startsWith("BACKBONE")) {
-            op.push(1.0);
-            continue;
+
+           const backboneChr = tr.meta.split("|")[1];
+
+           if (modeChrom) {
+               op.push(backboneChr === activeChrom ? 1.0 : 0.15);
+           } else {
+               op.push(1.0);
+           }
+
+           continue;
         }
+
 
         const [anc, chr] = tr.meta.split("|");
 
@@ -618,6 +627,33 @@ function highlight(activeChrom, activeAnc){
 plot.on("plotly_doubleclick", function(){
     selectedAnc = null;
     Plotly.restyle(plot, {"opacity": plot.data.map(_ => 1.0)});
+});
+
+plot.on("plotly_legendclick", function(){
+    selectedAnc = null;
+
+    // allow Plotly's normal legend toggle to proceed
+    setTimeout(function(){
+        Plotly.restyle(
+            plot,
+            {"opacity": plot.data.map(_ => 1.0)}
+        );
+    }, 0);
+
+    return true;
+});
+
+plot.on("plotly_legenddoubleclick", function(){
+    selectedAnc = null;
+
+    setTimeout(function(){
+        Plotly.restyle(
+            plot,
+            {"opacity": plot.data.map(_ => 1.0)}
+        );
+    }, 0);
+
+    return true;
 });
 
 plot.on("plotly_hover", function(e){
