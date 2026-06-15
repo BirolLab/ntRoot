@@ -114,7 +114,9 @@ The resulting visualization provides:
 Users can interactively explore ancestry patterns within individual chromosomes or across the entire genome using the generated standalone HTML report. 
 
 An example visualization is available here:
-[Interactive LAI demo (HTML)](ntroot-lai-interactive_tile5000000.html)
+[Interactive LAI demo1 (HTML)](https://www.birollab.ca/viz/ERR3988858_ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html)
+[Interactive LAI demo2 (HTML)](https://www.birollab.ca/viz/ERR3242010_ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html)
+
 
 
 ## Human ancestry predictions <a name=data></a>
