@@ -6,10 +6,8 @@ RLW/LC 06/2026
 
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 import os
 import argparse
-import numpy as np
 
 # Define parameters / assumes GRCh38
 # Can be overriden using --fai option to read chromosome lengths from a FASTA index file
@@ -322,14 +320,30 @@ def build(df, out_html, input_tsv, predictor):
 
         a0, a1 = angles[c]
 
-        sub = df[df["chrom"] == c]
-        summary_raw = sub.groupby("ancestry_prediction")["end"].count()
-        summary_pct = (summary_raw / summary_raw.sum() * 100).sort_values(ascending=False)
+        sub = df[df["chrom"] == c].copy()
+        sub["tile_len"] = sub["end"] - sub["start"] + 1
+
+        summary_raw = sub.groupby("ancestry_prediction")["tile_len"].sum()
+        summary_pct = (
+            summary_raw / CHR_LENGTHS[c] * 100
+        ).sort_values(ascending=False)
+
+        assigned_bp = sub["tile_len"].sum()
+        unassigned_bp = max(0, CHR_LENGTHS[c] - assigned_bp)
+        unassigned_pct = unassigned_bp / CHR_LENGTHS[c] * 100
+
+        hover_lines = [
+            f"{k}: {v:.1f}%"
+            for k, v in summary_pct.items()
+        ]
+
+        if unassigned_bp > 0:
+            hover_lines.append(f"Unassigned: {unassigned_pct:.1f}%")
 
         hover_txt = (
-            f"chromosome{c}<br>"
+            f"Chromosome {c}<br>"
             f"{CHR_LENGTHS[c]/1e6:.1f} Mb<br><br>"
-            + "<br>".join([f"{k}: {v:.1f}%" for k, v in summary_pct.items()])
+            + "<br>".join(hover_lines)
         )
 
         fig.add_trace(
@@ -379,8 +393,8 @@ def build(df, out_html, input_tsv, predictor):
             t, w, custom = [], [], []
 
             for _, r in sub.iterrows():
-                c = str(r["chrom"])
-                a0, a1 = angles[c]
+                chrom = str(r["chrom"])
+                a0, a1 = angles[chrom]
                 span = a1 - a0
                 clen = CHR_LENGTHS[c]
 
@@ -389,7 +403,7 @@ def build(df, out_html, input_tsv, predictor):
 
                 t.append((t0 + t1) / 2)
                 w.append(t1 - t0) 
-                custom.append([c, int(r["start"]), int(r["end"]), ANCESTRY_LABELS.get(anc, anc)])
+                custom.append([chrom, int(r["start"]), int(r["end"]), ANCESTRY_LABELS.get(anc, anc)])
 
             fig.add_trace(
                 go.Barpolar(
@@ -411,24 +425,59 @@ def build(df, out_html, input_tsv, predictor):
                     meta=f"{anc}|{c}"
                 )
             )
-
     # =============================
     # PIE
     # =============================
     df["tile_len"] = df["end"] - df["start"] + 1
+
+    # Genome-wide ancestry summary
     frac_bp = df.groupby("ancestry_prediction")["tile_len"].sum()
     frac_mb = (frac_bp / 1e6).round(1)
     frac_pct = frac_bp / frac_bp.sum() * 100
 
     pie_text = []
+    pie_hover = []
+
+    # Build per-chromosome summaries for each ancestry
+    pie_chr_summary = {}
 
     for anc in frac_mb.index:
+
+        anc_lines = []
+
+        for c in CHR_LENGTHS:
+
+            sub_chr = df[df["chrom"] == c]
+
+            anc_bp = sub_chr.loc[
+                sub_chr["ancestry_prediction"] == anc,
+                "tile_len"
+            ].sum()
+
+            if anc_bp == 0:
+                continue
+
+            anc_mb = anc_bp / 1e6
+            anc_pct = anc_bp / CHR_LENGTHS[c] * 100
+
+            anc_lines.append(
+                f"chr{c}: {anc_mb:.1f} Mb ({anc_pct:.1f}%)"
+            )
+
+        pie_chr_summary[anc] = "<br>".join(anc_lines)
+
         pct = frac_pct[anc]
 
         if pct >= 10:
             pie_text.append(f"{anc}<br>{pct:.1f}%")
         else:
             pie_text.append("")
+
+        pie_hover.append(
+            f"{ANCESTRY_LABELS.get(anc, anc)}<br>"
+            f"Genome-wide: {frac_pct[anc]:.1f}% ({frac_mb[anc]:.1f} Mb)<br><br>"
+            f"{pie_chr_summary[anc]}"
+    )
 
     fig.add_trace(
         go.Pie(
@@ -440,15 +489,15 @@ def build(df, out_html, input_tsv, predictor):
             text=pie_text,
             textinfo="text",
             textposition="inside",
-            insidetextorientation="horizontal", 
+            insidetextorientation="horizontal",
             textfont=dict(size=11, color="white"),
             showlegend=False,
             domain=dict(
                 x=[0.5 - pie_width/2, 0.5 + pie_width/2],
                 y=[center_y - pie_height/2, center_y + pie_height/2]
             ),
-            customdata=[ANCESTRY_LABELS.get(a, a) for a in frac_mb.index],
-            hovertemplate="%{customdata}<br>%{percent:.1%}<br>%{value} Mb<extra></extra>",
+            hovertext=pie_hover,
+            hovertemplate=("%{hovertext}<extra></extra>")
         )
     )
     # =============================
@@ -461,9 +510,38 @@ def build(df, out_html, input_tsv, predictor):
     for c in CHR_LENGTHS:
         a0, a1 = angles[c]
 
-        sub = df[df["chrom"] == c]
-        summary_raw = sub.groupby("ancestry_prediction")["end"].count()
-        summary_pct = (summary_raw / summary_raw.sum() * 100).sort_values(ascending=False)
+        sub = df[df["chrom"] == c].copy()
+        sub["tile_len"] = sub["end"] - sub["start"] + 1
+
+        summary_raw = sub.groupby("ancestry_prediction")["tile_len"].sum()
+        summary_pct = (
+            summary_raw / CHR_LENGTHS[c] * 100
+        ).sort_values(ascending=False)
+
+        copy_lines = []
+
+        for anc, anc_bp in summary_raw.items():
+
+            anc_pct = anc_bp / CHR_LENGTHS[c] * 100
+            anc_mb = anc_bp / 1e6
+
+            copy_lines.append(
+                f"{anc}: {anc_mb:.1f} Mb ({anc_pct:.1f}%)"
+            )
+
+        assigned_bp = sub["tile_len"].sum()
+        unassigned_bp = max(0, CHR_LENGTHS[c] - assigned_bp)
+        unassigned_pct = unassigned_bp / CHR_LENGTHS[c] * 100
+
+        if unassigned_bp > 0:
+            copy_lines.append(
+                f"Unassigned: {unassigned_bp/1e6:.1f} Mb ({unassigned_pct:.1f}%)"
+            )
+
+        copy_txt = (
+            f"Chromosome {c} : {CHR_LENGTHS[c]/1e6:.1f} Mb\n\n"
+            + "\n".join(copy_lines)
+        )
 
         hover_txt = (
             f"{CHR_LENGTHS[c]/1e6:.1f} Mb<br><br>"
@@ -472,7 +550,7 @@ def build(df, out_html, input_tsv, predictor):
 
         label_theta.append((a0 + a1) / 2)
         label_text.append(f"{c}")
-        hover_texts.append(hover_txt)
+        hover_texts.append([hover_txt, copy_txt])
 
     fig.add_trace(
         go.Scatterpolar(
@@ -481,8 +559,9 @@ def build(df, out_html, input_tsv, predictor):
             mode="text",
             text=label_text,
             customdata=[
-                [c, hover_texts[i]] for i, c in enumerate(CHR_LENGTHS)
-            ],
+                [c, hover_texts[i][0], hover_texts[i][1]]
+                for i, c in enumerate(CHR_LENGTHS)
+                ],
             hovertemplate=
                 "Chromosome %{customdata[0]}<br>"
                 "%{customdata[1]}<extra></extra>",
@@ -539,25 +618,195 @@ document.addEventListener("DOMContentLoaded", function() {
 const plot = document.getElementsByClassName("plotly-graph-div")[0];
 
 let selectedAnc = null;
+let infoBox = null;
+let infoBoxPinned = false;
 
-plot.on("plotly_click", function(e){
-    const pt = e.points[0];
 
-    // PIE click
-    if (pt.data.type === "pie") {
-        selectedAnc = pt.label;
-        highlight(null, selectedAnc);
+// ============================================================
+// INFORMATION BOX
+// ============================================================
+
+function createInfoBox() {
+
+    if (infoBox) return;
+
+    infoBox = document.createElement("div");
+
+    infoBox.style.position = "fixed";
+    infoBox.style.zIndex = "9999";
+    infoBox.style.background = "white";
+    infoBox.style.border = "1px solid #999";
+    infoBox.style.borderRadius = "6px";
+    infoBox.style.boxShadow = "0 3px 12px rgba(0,0,0,0.25)";
+    infoBox.style.padding = "12px 14px";
+    infoBox.style.fontFamily = "Arial, sans-serif";
+    infoBox.style.fontSize = "13px";
+    infoBox.style.lineHeight = "1.35";
+    infoBox.style.maxWidth = "360px";
+    infoBox.style.maxHeight = "500px";
+    infoBox.style.overflowY = "auto";
+    infoBox.style.display = "none";
+
+    document.body.appendChild(infoBox);
+}
+
+
+// ============================================================
+// COPY TEXT
+// ============================================================
+
+function copyToClipboard(text) {
+
+    // Modern Clipboard API
+    if (navigator.clipboard && window.isSecureContext) {
+
+        navigator.clipboard.writeText(text)
+            .then(function() {
+                showCopyFeedback();
+            })
+            .catch(function() {
+                fallbackCopy(text);
+            });
+
         return;
     }
 
-    // LAI segment click
-    if (pt.data.meta && pt.data.meta.includes("|")) {
-        const anc = pt.data.meta.split("|")[0];
-        selectedAnc = anc;
-        highlight(null, anc);
-        return;
+    // Fallback for local file:// HTML
+    fallbackCopy(text);
+}
+
+
+function fallbackCopy(text) {
+
+    const textarea = document.createElement("textarea");
+
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.left = "-9999px";
+    textarea.style.top = "0";
+
+    document.body.appendChild(textarea);
+
+    textarea.focus();
+    textarea.select();
+
+    try {
+        document.execCommand("copy");
+        showCopyFeedback();
     }
-});
+    catch (err) {
+        alert("Unable to copy text to clipboard.");
+    }
+
+    document.body.removeChild(textarea);
+}
+
+
+function showCopyFeedback() {
+
+    const button = document.getElementById("lai-copy-button");
+
+    if (!button) return;
+
+    const original = button.innerText;
+
+    button.innerText = "Copied!";
+
+    setTimeout(function() {
+        button.innerText = original;
+    }, 1200);
+}
+
+
+// ============================================================
+// SHOW INFORMATION BOX
+// ============================================================
+
+function showInfoBox(title, text, x, y, pinned) {
+
+    createInfoBox();
+
+    infoBoxPinned = pinned;
+
+    const escapedText = text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/\\n/g, "<br>");
+
+    infoBox.innerHTML =
+        '<div style="margin-bottom:10px;">' +
+            '<strong style="font-size:15px;">' +
+                title +
+            '</strong>' +
+        '</div>' +
+        '<div style="margin-bottom:10px;">' +
+            escapedText +
+        '</div>' +
+
+        '<div style="display:flex; gap:6px;">' +
+
+            '<button id="lai-copy-button" ' +
+                'style="border:1px solid #aaa; background:#f5f5f5; ' +
+                'border-radius:4px; padding:4px 10px; cursor:pointer;">' +
+                'Copy' +
+            '</button>' +
+
+            '<button id="lai-close-button" ' +
+                'style="border:1px solid #aaa; background:#f5f5f5; ' +
+                'border-radius:4px; padding:4px 10px; cursor:pointer;">' +
+                '&times;' +
+            '</button>' +
+
+        '</div>';
+
+    infoBox.style.display = "block";
+
+    // Keep the box within the browser window
+    const boxWidth = 380;
+    const boxHeight = 250;
+
+    let left = x + 12;
+    let top = y + 12;
+
+    if (left + boxWidth > window.innerWidth) {
+        left = Math.max(10, x - boxWidth - 12);
+    }
+
+    if (top + boxHeight > window.innerHeight) {
+        top = Math.max(10, y - boxHeight - 12);
+    }
+
+    infoBox.style.left = left + "px";
+    infoBox.style.top = top + "px";
+
+    document.getElementById("lai-close-button")
+        .addEventListener("click", function() {
+
+            infoBox.style.display = "none";
+            infoBoxPinned = false;
+        });
+
+    document.getElementById("lai-copy-button")
+        .addEventListener("click", function() {
+
+            copyToClipboard(text);
+        });
+}
+
+
+function hideInfoBox() {
+
+    if (!infoBox) return;
+
+    infoBox.style.display = "none";
+    infoBoxPinned = false;
+}
+
+
+// ============================================================
+// HIGHLIGHTING
+// ============================================================
 
 function highlight(activeChrom, activeAnc){
 
@@ -569,6 +818,7 @@ function highlight(activeChrom, activeAnc){
     const modeAnc = ancToUse !== null;
 
     for (let i = 0; i < plot.data.length; i++) {
+
         const tr = plot.data[i];
 
         if (tr.meta === "CHR_LABELS" || !tr.meta) {
@@ -579,43 +829,55 @@ function highlight(activeChrom, activeAnc){
         // -------------------------
         // BACKBONE CHROMOSOMES
         // -------------------------
+
         if (tr.meta.startsWith("BACKBONE")) {
 
-           const backboneChr = tr.meta.split("|")[1];
+            const backboneChr = tr.meta.split("|")[1];
 
-           if (modeChrom) {
-               op.push(backboneChr === activeChrom ? 1.0 : 0.15);
-           } else {
-               op.push(1.0);
-           }
+            if (modeChrom) {
+                op.push(
+                    backboneChr === activeChrom ? 1.0 : 0.15
+                );
+            }
+            else {
+                op.push(1.0);
+            }
 
-           continue;
+            continue;
         }
-
 
         const [anc, chr] = tr.meta.split("|");
 
         // -------------------------
         // CHR MODE
         // -------------------------
+
         if (modeChrom) {
+
             const keep = (chr === activeChrom);
+
             op.push(keep ? 1.0 : 0.05);
+
             continue;
         }
 
         // -------------------------
         // ANC MODE
         // -------------------------
+
         if (modeAnc) {
+
             const keep = (anc === ancToUse);
+
             op.push(keep ? 1.0 : 0.08);
+
             continue;
         }
 
         // -------------------------
         // DEFAULT
         // -------------------------
+
         op.push(1.0);
     }
 
@@ -624,73 +886,278 @@ function highlight(activeChrom, activeAnc){
     });
 }
 
-plot.on("plotly_doubleclick", function(){
-    selectedAnc = null;
-    Plotly.restyle(plot, {"opacity": plot.data.map(_ => 1.0)});
-});
 
-plot.on("plotly_legendclick", function(){
-    selectedAnc = null;
+// ============================================================
+// CLICK
+// ============================================================
 
-    // allow Plotly's normal legend toggle to proceed
-    setTimeout(function(){
-        Plotly.restyle(
-            plot,
-            {"opacity": plot.data.map(_ => 1.0)}
-        );
-    }, 0);
+plot.on("plotly_click", function(e){
 
-    return true;
-});
-
-plot.on("plotly_legenddoubleclick", function(){
-    selectedAnc = null;
-
-    setTimeout(function(){
-        Plotly.restyle(
-            plot,
-            {"opacity": plot.data.map(_ => 1.0)}
-        );
-    }, 0);
-
-    return true;
-});
-
-plot.on("plotly_hover", function(e){
     const pt = e.points[0];
 
     // -------------------------
-    // chromosome label hover
+    // CHROMOSOME LABEL CLICK
     // -------------------------
+
     if (pt.data.meta === "CHR_LABELS") {
+
         const chrom = pt.customdata[0];
+        const copyText = pt.customdata[2];
+
+        selectedAnc = null;
+
         highlight(chrom, null);
+
+        showInfoBox(
+            "Chromosome " + chrom,
+            copyText,
+            e.event ? e.event.clientX : window.innerWidth / 2,
+            e.event ? e.event.clientY : window.innerHeight / 2,
+            true
+        );
+
         return;
     }
 
+
     // -------------------------
-    // LAI hover → chromosome focus
+    // PIE CLICK
     // -------------------------
+
+    if (pt.data.type === "pie") {
+
+        const anc = pt.label;
+
+        selectedAnc = anc;
+
+        highlight(null, anc);
+
+        const custom = pt.customdata;
+
+        const title = custom[0];
+
+        const text =
+            custom[0] + "\\n" +
+            custom[1] + "\\n" +
+            custom[2] + "\\n\\n" +
+            custom[3].replace(/<br>/g, "\\n");
+
+        showInfoBox(
+            title,
+            text,
+            e.event ? e.event.clientX : window.innerWidth / 2,
+            e.event ? e.event.clientY : window.innerHeight / 2,
+            true
+        );
+
+        return;
+    }
+
+
+    // -------------------------
+    // LAI SEGMENT CLICK
+    // -------------------------
+
     if (pt.data.meta && pt.data.meta.includes("|")) {
+
+        const anc = pt.data.meta.split("|")[0];
+
+        selectedAnc = anc;
+
+        highlight(null, anc);
+
+        return;
+    }
+
+});
+
+
+// ============================================================
+// HOVER
+// ============================================================
+
+plot.on("plotly_hover", function(e){
+
+    const pt = e.points[0];
+
+    // -------------------------
+    // CHROMOSOME LABEL HOVER
+    // -------------------------
+
+    if (pt.data.meta === "CHR_LABELS") {
+
+        const chrom = pt.customdata[0];
+
+        highlight(chrom, null);
+
+        // Keep Plotly's normal hover tooltip.
+        // The custom copyable box appears only on click.
+
+        return;
+    }
+
+
+    // -------------------------
+    // PIE HOVER
+    // -------------------------
+
+    if (pt.data.type === "pie") {
+
+        const custom = pt.customdata;
+
+        const title = custom[0];
+
+        const text =
+            custom[0] + "\\n" +
+            custom[1] + "\\n" +
+            custom[2] + "\\n\\n" +
+            custom[3].replace(/<br>/g, "\\n");
+
+        // Show copyable information box on hover.
+        // It is not pinned unless the user clicks the pie.
+
+        showInfoBox(
+            title,
+            text,
+            e.event ? e.event.clientX : window.innerWidth / 2,
+            e.event ? e.event.clientY : window.innerHeight / 2,
+            false
+        );
+
+        return;
+    }
+
+
+    // -------------------------
+    // LAI HOVER → CHROMOSOME FOCUS
+    // -------------------------
+
+    if (pt.data.meta && pt.data.meta.includes("|")) {
+
         const parts = pt.data.meta.split("|");
+
         const anc = parts[0];
         const chr = parts[1];
 
         highlight(chr, null);
+
         return;
     }
 
 });
 
+
 plot.on("plotly_unhover", function(){
 
-    // keep persistent ancestry selection if user clicked
+    // Don't close a box that was explicitly clicked/pinned.
+    if (infoBoxPinned) {
+        return;
+    }
+
+    // Pie hover box disappears when leaving the pie.
+    hideInfoBox();
+
+    // Keep persistent ancestry selection if user clicked.
     if (selectedAnc !== null) {
+
         highlight(null, selectedAnc);
+
         return;
     }
 
     highlight(null, null);
+
+});
+
+
+// ============================================================
+// DOUBLE CLICK
+// ============================================================
+
+plot.on("plotly_doubleclick", function(){
+
+    selectedAnc = null;
+
+    hideInfoBox();
+
+    Plotly.restyle(
+        plot,
+        {"opacity": plot.data.map(_ => 1.0)}
+    );
+
+});
+
+
+// ============================================================
+// LEGEND CLICK
+// ============================================================
+
+plot.on("plotly_legendclick", function(){
+
+    selectedAnc = null;
+
+    hideInfoBox();
+
+    // allow Plotly's normal legend toggle to proceed
+    setTimeout(function(){
+
+        Plotly.restyle(
+            plot,
+            {"opacity": plot.data.map(_ => 1.0)}
+        );
+
+    }, 0);
+
+    return true;
+
+});
+
+
+// ============================================================
+// LEGEND DOUBLE CLICK
+// ============================================================
+
+plot.on("plotly_legenddoubleclick", function(){
+
+    selectedAnc = null;
+
+    hideInfoBox();
+
+    setTimeout(function(){
+
+        Plotly.restyle(
+            plot,
+            {"opacity": plot.data.map(_ => 1.0)}
+        );
+
+    }, 0);
+
+    return true;
+
+});
+
+
+// ============================================================
+// CLICK OUTSIDE INFO BOX
+// ============================================================
+
+document.addEventListener("click", function(e){
+
+    if (!infoBox || infoBox.style.display === "none") {
+        return;
+    }
+
+    if (infoBox.contains(e.target)) {
+        return;
+    }
+
+    // Don't interfere with Plotly itself.
+    if (plot.contains(e.target)) {
+        return;
+    }
+
+    hideInfoBox();
+
 });
 
 });
