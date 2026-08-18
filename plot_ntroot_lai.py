@@ -620,7 +620,7 @@ const plot = document.getElementsByClassName("plotly-graph-div")[0];
 let selectedAnc = null;
 let infoBox = null;
 let infoBoxPinned = false;
-
+let pieClickTimer = null;
 
 // ============================================================
 // INFORMATION BOX
@@ -735,14 +735,6 @@ function showInfoBox(title, text, x, y, pinned) {
         .replace(/\\n/g, "<br>");
 
     infoBox.innerHTML =
-        '<div style="margin-bottom:10px;">' +
-            '<strong style="font-size:15px;">' +
-                title +
-            '</strong>' +
-        '</div>' +
-        '<div style="margin-bottom:10px;">' +
-            escapedText +
-        '</div>' +
 
         '<div style="display:flex; gap:6px;">' +
 
@@ -758,7 +750,12 @@ function showInfoBox(title, text, x, y, pinned) {
                 '&times;' +
             '</button>' +
 
+        '</div>' + 
+
+        '<div style="margin-bottom:10px;">' +
+            escapedText +
         '</div>';
+        
 
     infoBox.style.display = "block";
 
@@ -919,40 +916,54 @@ plot.on("plotly_click", function(e){
         return;
     }
 
-
     // -------------------------
     // PIE CLICK
+    // Single click = info box
+    // Double click = ancestry highlight
     // -------------------------
 
     if (pt.data.type === "pie") {
 
         const anc = pt.label;
 
-        selectedAnc = anc;
+        // If a previous single-click is waiting, this is a double-click.
+        if (pieClickTimer !== null) {
 
-        highlight(null, anc);
+            clearTimeout(pieClickTimer);
+            pieClickTimer = null;
 
-        const custom = pt.customdata;
+            selectedAnc = anc;
 
-        const title = custom[0];
+            hideInfoBox();
 
-        const text =
-            custom[0] + "\\n" +
-            custom[1] + "\\n" +
-            custom[2] + "\\n\\n" +
-            custom[3].replace(/<br>/g, "\\n");
+            highlight(null, anc);
 
-        showInfoBox(
-            title,
-            text,
-            e.event ? e.event.clientX : window.innerWidth / 2,
-            e.event ? e.event.clientY : window.innerHeight / 2,
-            true
-        );
+            return;
+        }
+
+        // Wait briefly to see whether a second click follows.
+        pieClickTimer = setTimeout(function() {
+
+            pieClickTimer = null;
+
+            const title = pt.label;
+
+            const text =
+                pt.data.hovertext[pt.pointNumber]
+                    .replace(/<br>/g, "\\n")  ;
+
+            showInfoBox(
+                title,
+                text,
+                e.event ? e.event.clientX : window.innerWidth / 2,
+                e.event ? e.event.clientY : window.innerHeight / 2,
+                true
+            );
+
+        }, 250);
 
         return;
     }
-
 
     // -------------------------
     // LAI SEGMENT CLICK
@@ -996,37 +1007,14 @@ plot.on("plotly_hover", function(e){
         return;
     }
 
-
     // -------------------------
     // PIE HOVER
+    // Keep Plotly's normal tooltip only.
     // -------------------------
 
     if (pt.data.type === "pie") {
-
-        const custom = pt.customdata;
-
-        const title = custom[0];
-
-        const text =
-            custom[0] + "\\n" +
-            custom[1] + "\\n" +
-            custom[2] + "\\n\\n" +
-            custom[3].replace(/<br>/g, "\\n");
-
-        // Show copyable information box on hover.
-        // It is not pinned unless the user clicks the pie.
-
-        showInfoBox(
-            title,
-            text,
-            e.event ? e.event.clientX : window.innerWidth / 2,
-            e.event ? e.event.clientY : window.innerHeight / 2,
-            false
-        );
-
         return;
     }
-
 
     // -------------------------
     // LAI HOVER → CHROMOSOME FOCUS
@@ -1074,7 +1062,14 @@ plot.on("plotly_unhover", function(){
 // DOUBLE CLICK
 // ============================================================
 
-plot.on("plotly_doubleclick", function(){
+plot.on("plotly_doubleclick", function(e){
+
+    const pt = e.points && e.points.length ? e.points[0] : null;
+
+    // Pie double-click is handled explicitly above.
+    if (pt && pt.data.type === "pie") {
+        return;
+    }
 
     selectedAnc = null;
 
@@ -1086,7 +1081,6 @@ plot.on("plotly_doubleclick", function(){
     );
 
 });
-
 
 // ============================================================
 // LEGEND CLICK
@@ -1164,8 +1158,17 @@ document.addEventListener("click", function(e){
 </script>
 """
 
-    html = fig.to_html(full_html=True, include_plotlyjs=True, config={"responsive": True}) 
-    html = html.replace("</body>", js + "\n</body>")
+    html = fig.to_html(full_html=True, include_plotlyjs=True, config={"responsive": True})
+
+    css = """
+    <style>
+    .plotly .cursor-crosshair {
+        cursor: default !important;
+    }
+    </style>
+    """
+
+    html = html.replace("</body>", css + "\n" + js + "\n</body>")
 
     with open(out_html, "w") as f:
         f.write(html)
