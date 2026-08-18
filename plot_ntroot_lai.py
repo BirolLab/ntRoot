@@ -461,7 +461,7 @@ def build(df, out_html, input_tsv, predictor):
             anc_pct = anc_bp / CHR_LENGTHS[c] * 100
 
             anc_lines.append(
-                f"chr{c}: {anc_mb:.1f} Mb ({anc_pct:.1f}%)"
+                f"chr{c}: {anc_pct:.1f}% ({anc_mb:.1f} Mb)"
             )
 
         pie_chr_summary[anc] = "<br>".join(anc_lines)
