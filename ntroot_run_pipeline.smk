@@ -81,25 +81,25 @@ rule ntroot_input_vcf:
 rule ntroot_input_vcf_lai:
     input: f"{input_vcf_basename}.cross-ref.vcf_ancestry-predictions-tile-resolution_tile{tile_size}.tsv"
 
-# ---- Recombination-resolution targets (physical LAI + global + recomb LAI) ----
+# ---- Recombination-only targets: recomb global GAI + recomb LAI ----
 rule ntroot_reads_lai_recomb:
     input:
-        f"{reads_prefix}_ntedit_k{k}_variants.vcf_ancestry-predictions-tile-resolution_tile{tile_size}.tsv",
+        f"{reads_prefix}_ntedit_k{k}_variants.vcf_ancestry-predictions_recomb.tsv",
         f"{reads_prefix}_ntedit_k{k}_variants.vcf_ancestry-predictions-recomb-resolution.tsv"
 
 rule ntroot_reads_exome_lai_recomb:
     input:
-        f"{reads_prefix}_ntedit_k{k}_exome_variants.vcf_ancestry-predictions-tile-resolution_tile{tile_size}.tsv",
+        f"{reads_prefix}_ntedit_k{k}_exome_variants.vcf_ancestry-predictions_recomb.tsv",
         f"{reads_prefix}_ntedit_k{k}_exome_variants.vcf_ancestry-predictions-recomb-resolution.tsv"
 
 rule ntroot_genome_lai_recomb:
     input:
-        f"{genome_prefix}_ntedit_k{k}_variants.vcf_ancestry-predictions-tile-resolution_tile{tile_size}.tsv",
+        f"{genome_prefix}_ntedit_k{k}_variants.vcf_ancestry-predictions_recomb.tsv",
         f"{genome_prefix}_ntedit_k{k}_variants.vcf_ancestry-predictions-recomb-resolution.tsv"
 
 rule ntroot_input_vcf_lai_recomb:
     input:
-        f"{input_vcf_basename}.cross-ref.vcf_ancestry-predictions-tile-resolution_tile{tile_size}.tsv",
+        f"{input_vcf_basename}.cross-ref.vcf_ancestry-predictions_recomb.tsv",
         f"{input_vcf_basename}.cross-ref.vcf_ancestry-predictions-recomb-resolution.tsv"
 
 rule ntedit_reads:
@@ -253,17 +253,16 @@ rule ancestry_prediction_recomb:
         ref_fai = f"{draft_base}.fai",
         recomb_bed = recomb_bed
     output:
+        global_output = "{vcf}_ancestry-predictions_recomb.tsv",
         recomb_output = "{vcf}_ancestry-predictions-recomb-resolution.tsv",
         html_output = "{vcf}_ntroot-lai-interactive-recomb.html"
     params:
         benchmark = f"{time_command} ancestry_prediction_recomb.time",
-        tile_size = tile_size,
         verbosity = v
     shell:
         """
         {params.benchmark} ntRootAncestryPredictor.pl \
             -f {input.vcf} \
-            -t {params.tile_size} \
             -v {params.verbosity} \
             -r 1 \
             -i {input.ref_fai} \

@@ -45,9 +45,11 @@ def set_up_parser():
                         default=5000000, type=int)
     parser.add_argument("--lai", help="Output ancestry predictons per tile in a separate output file",
                         action="store_true")
-    parser.add_argument("--recomb_bed", help="Recombination-tile BED file "
-                        "(chrom start end name [cM]); when provided, ntRoot additionally outputs "
-                        "recombination-resolution LAI. Implies --lai.",
+    parser.add_argument("--recomb_bed", help="Recombination-tile BED file, tab-separated with "
+                        "columns: chrom, start, end, name, and an optional cM width. Chromosome IDs "
+                        "must match the reference/VCF. When provided, ntRoot runs in recombination "
+                        "mode and outputs recombination-resolution LAI and a recombination-based "
+                        "global ancestry (instead of the fixed-tile outputs).",
                         type=str, default=None)
     parser.add_argument("-t",
                         help="Number of threads [default=4]", default=4, type=int)
@@ -118,7 +120,6 @@ def main():
     if args.recomb_bed:
         if not os.path.isfile(args.recomb_bed):
             raise FileNotFoundError(f"Recombination BED {args.recomb_bed} not found")
-        args.lai = True  # recombination LAI piggybacks on tile-resolution machinery
 
     if not args.draft and not args.reference:
         raise argparse.ArgumentTypeError("Please specify the reference genome with --reference")
@@ -134,29 +135,28 @@ def main():
     intro_string = ["Running ntRoot...",
                     "Parameter settings:"]
 
-    recomb = bool(args.recomb_bed)
     if args.reads:
-        if args.exome and args.lai and recomb:
+        if args.exome and args.recomb_bed:
             smk_rule = "ntroot_reads_exome_lai_recomb"
         elif args.exome and args.lai:
             smk_rule = "ntroot_reads_exome_lai"
         elif args.exome:
             smk_rule = "ntroot_reads_exome"
-        elif args.lai and recomb:
+        elif args.recomb_bed:
             smk_rule = "ntroot_reads_lai_recomb"
         elif args.lai:
             smk_rule = "ntroot_reads_lai"
         else:
             smk_rule = "ntroot_reads"
     if args.genome:
-        if args.lai and recomb:
+        if args.recomb_bed:
             smk_rule = "ntroot_genome_lai_recomb"
         elif args.lai:
             smk_rule = "ntroot_genome_lai"
         else:
             smk_rule = "ntroot_genome"
     if args.custom_vcf:
-        if args.lai and recomb:
+        if args.recomb_bed:
             smk_rule = "ntroot_input_vcf_lai_recomb"
         elif args.lai:
             smk_rule = "ntroot_input_vcf_lai"
