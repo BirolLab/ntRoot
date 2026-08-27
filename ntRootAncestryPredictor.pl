@@ -121,14 +121,14 @@ sub find_recomb_tile {
 	return -1 unless defined $starts;
 	my $hi = $#{$starts};
 	return -1 if $hi < 0;
-	return 0 if $pos < $starts->[0];
+	return 0 if $pos < $starts->[0];        # clamp below to first tile
 	my ($lo, $ans) = (0, 0);
 	while ($lo <= $hi) {
 		my $mid = int(($lo + $hi) / 2);
 		if ($starts->[$mid] <= $pos) { $ans = $mid; $lo = $mid + 1; }
 		else { $hi = $mid - 1; }
 	}
-	return $ans;                            
+	return $ans;                            # clamps above to last tile automatically
 }
 
 ###below support for compressed vcf
@@ -233,13 +233,13 @@ if(! $xr){
 # is given (default mode).
 #####################################################################
 if ($recomb_bed) {
-	my $rout = $f . "_ancestry-predictions-recomb-resolution.tsv";
+	my $rout = $f . "_ancestry-predictions-tile-resolution_tile-recomb-bed.tsv";
 	open(RCO, ">$rout") || die "Can't write to $rout -- fatal.\n";
 	print RCO "chrom\tstart\tend\tancestry_prediction";
 	foreach my $population (@ordered_populations) {
 		print RCO "\t$population-score";
 	}
-	print RCO "\ttile_id\tcM_width\n";
+	print RCO "\n";
 
 	my $rtop;          # recombination-weighted global fraction (bp)
 	my $rtotal = 0;
@@ -276,7 +276,7 @@ if ($recomb_bed) {
 			foreach my $population (@ordered_populations) {
 				printf RCO "\t%.4f", ($window_population_metric->{$population} || 0);
 			}
-			print RCO "\t$name\t$cm\n";
+			print RCO "\n";
 		}
 	}
 	close RCO;
@@ -290,12 +290,12 @@ if ($recomb_bed) {
 		$s->{$k}{'fract'} = $p * $s->{$k}{'ct'};
 	}
 
-	my $gout = $f . "_ancestry-predictions_recomb.tsv";
+	my $gout = $f . "_ancestry-predictions_tile-recomb-bed.tsv";
 	open(GOUT,">$gout") || die "Can't write to $gout -- fatal.\n";
 	my $ghdr  = "# GAI score: Average SNV allele frequency * rate of SNVs with non-zero allele frequency\n";
-	$ghdr .= "# Populations ranked by LAI fraction (recombination tiles)\n";
+	$ghdr .= "# Populations ranked by LAI fraction\n";
 	$ghdr .= "# AF: Allele Frequency; nz: Non-zero\n";
-	$ghdr .= "GAI Super-population\tLAI fraction (recombination tiles)\tGAI score\tTotal SNV count\tNon-zero AF SNV count";
+	$ghdr .= "GAI Super-population\tLAI fraction (tile:recomb-bed)\tGAI score\tTotal SNV count\tNon-zero AF SNV count";
 	$ghdr .= $verbose ? "\tSumAF\tAvgAF\tnzAvgAF\tnzSNVrate\tAvgAF * nzAF_SNV_count\n" : "\n";
 	print GOUT $ghdr;
 
