@@ -3,20 +3,19 @@
 #AUTHORS
 #   Rene Warren
 #   Lauren Coombe
+#   Taghrid Aloraini
 
 #NAME
 #   ntRootAncestryPredictor.pl
 
 #SYNOPSIS
 #   ntRoot : ntedit-powered human super-population-level ancestry predictions using 1000 Genomes Project integrated variant call set
-#
-#   This version additionally supports RECOMBINATION-BASED tiling.
 
 #DOCUMENTATION
 #   Readme distributed with this software @ www.bcgsc.ca
 #   http://www.bcgsc.ca/platform/bioinfo/software/ntroot
 #   http://www.bcgsc.ca/platform/bioinfo/software/ntedit
-#   We hope this code is useful to you -- Please send comments & suggestions to rwarren * bcgsc.ca
+#   We hope this code is useful to you -- Please send comments & suggestions to rwarren * bccrc.ca
 #   If you use ntRoot, ntEdit, the ntEdit code or ideas, please cite our work
 
 #LICENSE
@@ -129,6 +128,25 @@ sub find_recomb_tile {
 	return $ans;                            # clamps above to last tile automatically
 }
 
+sub tile_header {
+	my ($populations) = @_;
+	my $header = "chrom\tstart\tend\tancestry_prediction";
+	foreach my $population (@{$populations}) {
+		$header .= "\t$population-score";
+	}
+	return $header . "\n";
+}
+
+sub global_header {
+	my ($tile_label, $include_verbose_columns) = @_;
+	my $header = "# GAI score: Average SNV allele frequency * rate of SNVs with non-zero allele frequency\n"
+		. "# Populations ranked by LAI fraction\n"
+		. "# AF: Allele Frequency; nz: Non-zero\n"
+		. "GAI Super-population\tLAI fraction ($tile_label)\tGAI score\tTotal SNV count\tNon-zero AF SNV count";
+	$header .= "\tSumAF\tAvgAF\tnzAvgAF\tnzSNVrate\tAvgAF * nzAF_SNV_count" if $include_verbose_columns;
+	return $header . "\n";
+}
+
 ###below support for compressed vcf
 my $IN;
 
@@ -160,8 +178,9 @@ while(<$IN>){
 	my $maxpop;
 
 	if(/_AF/){
-		my $wn = int($a[1] / $dw);                       # fixed physical tile index
-		my $rn = $recomb_bed ? find_recomb_tile($a[0], $a[1]) : -1;   # recomb tile index
+		# Only identify and tally the tile type used by the selected mode.
+		my $wn = $recomb_bed ? -1 : int($a[1] / $dw);  # fixed physical tile index
+		my $rn = $recomb_bed ? find_recomb_tile($a[0], $a[1]) : -1; # recomb tile index
 		$xr++;
 
                 my @alleles = split(/\^/,$a[7]);
@@ -186,20 +205,23 @@ while(<$IN>){
 						}
 						$s->{$d[0]}{'sum'}+=$afallele;
 
-						#chr  winnum   pop  (fixed physical tiles)
-						$z->{$a[0]}{$wn}{$pop}{'sum'}+=$afallele;
-						$y->{$a[0]}{$wn}{'ct'}++;
-
-						# recombination tiles (parallel accumulation)
 						if ($recomb_bed && $rn >= 0) {
+							# recombination tiles
 							$zr->{$a[0]}{$rn}{$pop}{'sum'} += $afallele;
 							$yr->{$a[0]}{$rn}{'ct'}++;
+						} elsif (!$recomb_bed) {
+							#chr  winnum   pop  (fixed physical tiles)
+							$z->{$a[0]}{$wn}{$pop}{'sum'} += $afallele;
+							$y->{$a[0]}{$wn}{'ct'}++;
 						}
 
 						if($afallele){
 							$s->{$d[0]}{'ct'}++;
-							$z->{$a[0]}{$wn}{$pop}{'nzct'}++;
-							$zr->{$a[0]}{$rn}{$pop}{'nzct'}++ if ($recomb_bed && $rn >= 0);
+							if ($recomb_bed && $rn >= 0) {
+								$zr->{$a[0]}{$rn}{$pop}{'nzct'}++;
+							} elsif (!$recomb_bed) {
+								$z->{$a[0]}{$wn}{$pop}{'nzct'}++;
+							}
 							if($a[1]>$max){
 								$max=$a[1];
 								$maxpop=$pop;
@@ -225,7 +247,7 @@ if(! $xr){
 }
 
 #####################################################################
-# Recombination-only mode: when a BED is supplied, ntRoot writes the
+# Recombination-BED mode: when a BED is supplied, ntRoot writes the
 # recombination-tile LAI and a recombination-weighted global GAI, then
 # exits. The fixed physical-tile outputs are produced only when no BED
 # is given (default mode).
@@ -233,11 +255,7 @@ if(! $xr){
 if ($recomb_bed) {
 	my $rout = $f . "_ancestry-predictions-tile-resolution_tile-recomb-bed.tsv";
 	open(RCO, ">$rout") || die "Can't write to $rout -- fatal.\n";
-	print RCO "chrom\tstart\tend\tancestry_prediction";
-	foreach my $population (@ordered_populations) {
-		print RCO "\t$population-score";
-	}
-	print RCO "\n";
+	print RCO tile_header(\@ordered_populations);
 
 	my $rtop;          # recombination-weighted global fraction (bp)
 	my $rtotal = 0;
@@ -268,7 +286,7 @@ if ($recomb_bed) {
 			my $width = ($end - $start + 1);
 			$rtop->{$winpop} += $width;
 			$rtotal += $width;
-			# 1-based inclusive start, consistent with physical-tile output
+
 			my $out_start = $start + 1;
 			print RCO "$el\t$out_start\t$end\t$winpop";
 			foreach my $population (@ordered_populations) {
@@ -290,12 +308,7 @@ if ($recomb_bed) {
 
 	my $gout = $f . "_ancestry-predictions_tile-recomb-bed.tsv";
 	open(GOUT,">$gout") || die "Can't write to $gout -- fatal.\n";
-	my $ghdr  = "# GAI score: Average SNV allele frequency * rate of SNVs with non-zero allele frequency\n";
-	$ghdr .= "# Populations ranked by LAI fraction\n";
-	$ghdr .= "# AF: Allele Frequency; nz: Non-zero\n";
-	$ghdr .= "GAI Super-population\tLAI fraction (tile:recomb-bed)\tGAI score\tTotal SNV count\tNon-zero AF SNV count";
-	$ghdr .= $verbose ? "\tSumAF\tAvgAF\tnzAvgAF\tnzSNVrate\tAvgAF * nzAF_SNV_count\n" : "\n";
-	print GOUT $ghdr;
+	print GOUT global_header("tile:recomb-bed", $verbose);
 
 	foreach my $population(sort {$rtop->{$b}<=>$rtop->{$a}} keys %$rtop){
 		my $k = $population . "_AF";
@@ -320,18 +333,14 @@ if ($recomb_bed) {
 	}
 	close GOUT;
 
-	print "Ancestry predictions (recombination tiles) available in:\n$gout\n$rout\n\n";
+	print "Ancestry predictions (tiles based on supplied BED file) available in:\n$gout\n$rout\n\n";
 	exit(0);
 }
 
 if ($tile_resolution) {
 	my $best = $f . "_ancestry-predictions-tile-resolution_tile$dw.tsv";
 	open(BEST,">$best") || die "Can't write to $best -- fatal.\n";
-	print BEST "chrom\tstart\tend\tancestry_prediction";
-	foreach my $population (@ordered_populations) {
-		print BEST "\t$population-score";
-	}
-	print BEST "\n";
+	print BEST tile_header(\@ordered_populations);
 }
 
 foreach my $el(sort {$a<=>$b} keys %$z){
@@ -391,20 +400,7 @@ foreach my $k(keys %$s){
 
 my $out = $f . "_ancestry-predictions_tile$dw.tsv";
 open(OUT,">$out") || die "Can't write to $out -- fatal.\n";
-
-
-my $header_str = "# GAI score: Average SNV allele frequency * rate of SNVs with non-zero allele frequency\n";
-$header_str .= "# Populations ranked by LAI fraction\n";
-$header_str .= "# AF: Allele Frequency; nz: Non-zero\n";
-$header_str .= "GAI Super-population\tLAI fraction (tile:$dw bp)\tGAI score\tTotal SNV count\tNon-zero AF SNV count";
-
-if ($verbose) {
-	$header_str = $header_str . "\tSumAF\tAvgAF\tnzAvgAF\tnzSNVrate\tAvgAF * nzAF_SNV_count\n";
-} else {
-	$header_str = $header_str . "\n";
-}
-
-print OUT $header_str;
+print OUT global_header("tile:$dw bp", $verbose);
 
 my $rank=0;
 foreach my $population(sort {$top->{$b}<=>$top->{$a}} keys %$top){
@@ -430,7 +426,7 @@ foreach my $population(sort {$top->{$b}<=>$top->{$a}} keys %$top){
 	}
 }
 
-close OUT;### filehandle hygiene
+close OUT;
 
 print "Ancestry predictions available in:\n$out\n";
 
