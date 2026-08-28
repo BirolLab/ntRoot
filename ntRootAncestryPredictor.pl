@@ -44,7 +44,7 @@ sub usage_page {
 	print "\t-r\tOutput ancestry inferences per tile - 0 (False) or 1 (True) [0]\n";
 	print "\t-i\tReference FAI file (Only required when -r specified)\n";
 	print "\t-b\tRecombination-tile BED file, tab-separated: chrom, start, end, name, and\n";
-	print "\t  \toptional cM width. Chromosome IDs must match the VCF/FAI. When supplied,\n";
+	print "\t  \toptional cM width. Chromosome IDs must match the VCF/FAI. \n";
 }
 
 
