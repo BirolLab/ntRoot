@@ -19,7 +19,7 @@ def set_up_parser():
                                      formatter_class=argparse.RawTextHelpFormatter,
                                      epilog="Note: please specify --reads OR --genome (not both)\n"
                                             "If you have any questions about ntRoot, please open an "
-                                            "issue at https://github.com/bcgsc/ntRoot")
+                                            "issue at https://github.com/birollab/ntRoot")
     parser.add_argument("--draft",
                 help=argparse.SUPPRESS)
     parser.add_argument("-r", "--reference",

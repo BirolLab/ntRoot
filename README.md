@@ -76,6 +76,8 @@ options:
   -k K                  k-mer size
   --tile TILE           Tile size for ancestry fraction inference (bp) [default=5000000]
   --lai                 Output ancestry predictons per tile in a separate output file
+  --recomb_bed RECOMB_BED
+                        Recombination-tile BED file, tab-separated with columns: chrom, start, end, name, and an optional cM width. Chromosome IDs must match the reference/VCF. When provided, ntRoot runs in recombination mode and outputs recombination-resolution LAI and a recombination-based global ancestry (instead of the fixed-tile outputs).
   -t T                  Number of threads [default=4]
   -z Z                  Minimum contig length [default=100]
   -j J                  controls size of k-mer subset. When checking subset of k-mers, check every jth k-mer [default=3]
