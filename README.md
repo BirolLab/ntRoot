@@ -129,12 +129,12 @@ Using the 1kGP integrated variant call set.
 
 Download this archive:
 <pre>
-wget https://zenodo.org/records/10976332/files/ntroot_supplementary_zenodo.tar.gz
+wget https://zenodo.org/records/22151063/files/ntroot_supplementary_zenodo.tar.gz
 </pre>
   
 from:
 <pre>
-https://zenodo.org/doi/10.5281/zenodo.10869033
+https://doi.org/10.5281/zenodo.10869033
 </pre>
 
 unzip and untar:
@@ -148,8 +148,10 @@ cd ./ntroot_supplementary_zenodo/data
 ls
 
 1000GP_integrated_snv_v2a_27022019.GRCh38.phased_gt1.vcf.gz
+genetic_map_to_bed.py
 GRCh38.fa.gz
 readme
+recomb_tiles_0.5cM.bed
 </pre>
 
 **Running ntRoot with whole genome sequencing reads or genome assemblies**
@@ -163,6 +165,12 @@ Example command:
 <pre>
 ntroot -k 55 --reference GRCh38.fa.gz --reads ERR3242308_ -t 48 -Y 0.55 -l 1000GP_integrated_snv_v2a_27022019.GRCh38.phased_gt1.vcf.gz
 </pre>
+
+To use a BED file to specify tile coordinates (instead of using the default fixed-size tiles), run:
+<pre>
+ntroot -k 55 --reference GRCh38.fa.gz --reads ERR3242308_ -t 48 -Y 0.55 -l 1000GP_integrated_snv_v2a_27022019.GRCh38.phased_gt1.vcf.gz --recomb_bed recomb_tiles_0.5cM.bed
+</pre>
+The `recomb_tiles_0.5cM.bed` file is provided in the ntRoot supplementary archive as an example.
 
 **Running ntRoot with whole exome sequencing**
 
