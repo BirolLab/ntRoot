@@ -35,6 +35,14 @@ cutoff = config["cutoff"] if "cutoff" in config else 0
 # Ancestry inference parameters
 tile_size = config["tile_size"] if "tile_size" in config else 5000000
 
+# Recombination-tile parameters
+recomb_bed = config["recomb_bed"] if "recomb_bed" in config else ""
+
+# Restrict the {tile_size} wildcard to digits so the numeric fixed-tile rules do
+# not also match the recombination outputs (which use the literal 'tile-recomb-bed').
+wildcard_constraints:
+    tile_size = r"\d+"
+
 # Third-party VCF parameters
 input_vcf = config["input_vcf"] if "input_vcf" in config else None
 input_vcf_basename = os.path.basename(os.path.realpath(input_vcf)) if input_vcf else "None"
@@ -77,6 +85,27 @@ rule ntroot_input_vcf:
 
 rule ntroot_input_vcf_lai:
     input: f"{input_vcf_basename}.cross-ref.vcf_ancestry-predictions-tile-resolution_tile{tile_size}.tsv"
+
+# ---- Recombination-only targets: recomb global GAI + recomb LAI ----
+rule ntroot_reads_lai_recomb:
+    input:
+        f"{reads_prefix}_ntedit_k{k}_variants.vcf_ancestry-predictions_tile-recomb-bed.tsv",
+        f"{reads_prefix}_ntedit_k{k}_variants.vcf_ancestry-predictions-tile-resolution_tile-recomb-bed.tsv"
+
+rule ntroot_reads_exome_lai_recomb:
+    input:
+        f"{reads_prefix}_ntedit_k{k}_exome_variants.vcf_ancestry-predictions_tile-recomb-bed.tsv",
+        f"{reads_prefix}_ntedit_k{k}_exome_variants.vcf_ancestry-predictions-tile-resolution_tile-recomb-bed.tsv"
+
+rule ntroot_genome_lai_recomb:
+    input:
+        f"{genome_prefix}_ntedit_k{k}_variants.vcf_ancestry-predictions_tile-recomb-bed.tsv",
+        f"{genome_prefix}_ntedit_k{k}_variants.vcf_ancestry-predictions-tile-resolution_tile-recomb-bed.tsv"
+
+rule ntroot_input_vcf_lai_recomb:
+    input:
+        f"{input_vcf_basename}.cross-ref.vcf_ancestry-predictions_tile-recomb-bed.tsv",
+        f"{input_vcf_basename}.cross-ref.vcf_ancestry-predictions-tile-resolution_tile-recomb-bed.tsv"
 
 rule ntedit_reads:
     input: 
@@ -222,6 +251,33 @@ rule ancestry_prediction_lai:
             {output.html_output} \
             --fai {input.ref_fai}
         """ 
+
+rule ancestry_prediction_recomb:
+    input:
+        vcf = "{vcf}",
+        ref_fai = f"{draft_base}.fai",
+        recomb_bed = recomb_bed
+    output:
+        global_output = "{vcf}_ancestry-predictions_tile-recomb-bed.tsv",
+        recomb_output = "{vcf}_ancestry-predictions-tile-resolution_tile-recomb-bed.tsv",
+        html_output = "{vcf}_ntroot-lai-interactive_tile-recomb-bed.html"
+    params:
+        benchmark = f"{time_command} ancestry_prediction_recomb.time",
+        verbosity = v
+    shell:
+        """
+        {params.benchmark} ntRootAncestryPredictor.pl \
+            -f {input.vcf} \
+            -v {params.verbosity} \
+            -r 1 \
+            -i {input.ref_fai} \
+            -b {input.recomb_bed}
+
+        plot_ntroot_lai.py \
+            {output.recomb_output} \
+            {output.html_output} \
+            --fai {input.ref_fai}
+        """
 
 rule sort_vcf_input:
     input: vcf = f"{input_vcf}"
