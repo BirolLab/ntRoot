@@ -45,8 +45,6 @@ sub usage_page {
 	print "\t-i\tReference FAI file (Only required when -r specified)\n";
 	print "\t-b\tRecombination-tile BED file, tab-separated: chrom, start, end, name, and\n";
 	print "\t  \toptional cM width. Chromosome IDs must match the VCF/FAI. When supplied,\n";
-	print "\t  \tntRoot additionally writes *_ancestry-predictions-recomb-resolution.tsv\n";
-	print "\t  \talongside the fixed-tile outputs (requires -i FAI).\n\n";
 }
 
 
