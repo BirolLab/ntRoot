@@ -115,11 +115,11 @@ The resulting visualization provides:
 
 Users can interactively explore ancestry patterns within individual chromosomes or across the entire genome using the generated standalone HTML report. 
 
-Example visualizations:
+Example interactive visualizations:
 <br>
-[Interactive LAI demo1 - ERR3988858 (Puerto Rico)](https://www.birollab.ca/viz/ERR3988858_ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html)
+[Interactive LAI demo1 - ERR3988858 (Puerto Rican)](https://www.birollab.ca/viz/ERR3988858_ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html)
 <br>
-[Interactive LAI demo2 - ERR3242010 (Peru)](https://www.birollab.ca/viz/ERR3242010_ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html)
+[Interactive LAI demo2 - ERR3242010 (Peruvian)](https://www.birollab.ca/viz/ERR3242010_ntedit_k55_variants.vcf_ntroot-lai-interactive_tile5000000.html)
 
 
 
