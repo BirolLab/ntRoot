@@ -107,10 +107,11 @@ The visualization enables interactive exploration of chromosome-specific and gen
 The resulting visualization provides:
 
 - Chromosome-length-scaled local ancestry tracks
-- Global ancestry composition summaries
+- Global ancestry composition summaries (Inner Donut)
 - Interactive exploration of chromosome-specific ancestry patterns
 - Interactive exploration of genome-wide ancestry patterns
-- Hover and click highlighting across linked views
+- Hover and click highlights across linked views
+- Copyable chromosome-level and ancestry-specific breakdowns for easy transfer of ancestry fractions and genomic lengths
 - Standalone HTML output viewable in any modern web browser
 
 Users can interactively explore ancestry patterns within individual chromosomes or across the entire genome using the generated standalone HTML report. 
