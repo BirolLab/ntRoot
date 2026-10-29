@@ -1,5 +1,6 @@
 [![Release](https://img.shields.io/github/release/birollab/ntRoot.svg)](https://github.com/birollab/ntRoot/releases)
 [![link](https://img.shields.io/badge/ntRoot-manuscript-brightgreen)](https://doi.org/10.1093/bioadv/vbaf287)
+[![link](https://img.shields.io/badge/ntRoot-protocol-blue)](https://doi.org/10.1002/cpz1.70491)
 [![link](https://img.shields.io/badge/HostSeq-manuscript-yellow)](https://doi.org/10.1139/gen-2026-0022)
 [![Zenodo](https://img.shields.io/badge/ntRoot-zenodo-red)](https://zenodo.org/doi/10.5281/zenodo.10869033)
 [![Conda](https://img.shields.io/conda/dn/bioconda/ntroot?label=Conda)](https://anaconda.org/bioconda/ntroot)
@@ -220,10 +221,26 @@ If you use ntRoot, please cite:
 
 [ntRoot: human ancestry inference at scale, from genomic data](https://doi.org/10.1093/bioadv/vbaf287)
 <pre>
-Warren RL, Coombe L, Wong J, Kazemi P, Birol I.
+Warren RL, Coombe L, Wong J, Kazemi P, Birol I. 2025.
 ntRoot: computational inference of human ancestry at scale from genomic data. 
 Bioinformatics Advances, vbaf287, https://doi.org/10.1093/bioadv/vbaf287
 </pre>
+
+[Concordance and divergence between self-declared ancestry and genome-derived ancestry composition in 10,250 participants from the HostSeq cohort](https://doi.org/10.1139/gen-2026-0022)
+<pre>
+Warren RL, Coombe L, Birol I, 2026.
+Concordance and divergence between self-declared ancestry and genome-derived ancestry composition in 10,250 participants from the HostSeq cohort.
+Genome. 69: 1-12. https://doi.org/10.1139/gen-2026-0022
+</pre>
+
+
+[ntRoot: Genetic Ancestry Inference Across Diverse Genomic Data Types](https://doi.org/10.1002/cpz1.70491)
+<pre>
+Coombe L, Aloraini T, Birol I, Warren RL. 2026.
+ntRoot: Genetic Ancestry Inference Across Diverse Genomic Data Types.
+Current Protocols, 6, e70491. doi: 10.1002/cpz1.70491
+</pre>
+
 
 Citing the poster:
 <pre>
