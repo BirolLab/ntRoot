@@ -398,7 +398,7 @@ def build(df, out_html, input_tsv, predictor):
                 span = a1 - a0
                 clen = CHR_LENGTHS[c]
 
-                t0 = a0 + span * (r["start"] / clen)
+                t0 = a0 + span * ((r["start"] - 1) / clen)
                 t1 = a0 + span * (r["end"] / clen)
 
                 t.append((t0 + t1) / 2)
