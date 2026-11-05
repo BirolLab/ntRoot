@@ -65,8 +65,61 @@ ANCESTRY_LABELS = {
     "CAS": "Central Asian",
     "OCE": "Oceania",
     "NA": "Not available",
-    "SAS": "South Asian"
+    "SAS": "South Asian",
+    "REF": "Reference"
 }
+
+# -----------------------------
+def read_ancestry_config(config_path):
+    """
+    Read ancestry codes, descriptions and colours from a TSV file.
+
+    Returns
+    -------
+    color_map : dict
+        Ancestry code -> colour.
+
+    ancestry_labels : dict
+        Ancestry code -> description.
+    """
+
+    config = pd.read_csv(
+        config_path,
+        sep="\t",
+        dtype=str,
+        keep_default_na=False
+    )
+
+    required = ["CODE", "DESCRIPTION", "COLOR"]
+
+    missing = [col for col in required if col not in config.columns]
+
+    if missing:
+        raise ValueError(
+            f"Ancestry configuration missing required columns: {missing}"
+        )
+
+    config = config[required].apply(lambda col: col.str.strip())
+
+    if (config == "").any().any():
+        raise ValueError(
+            "Ancestry configuration contains empty values."
+        )
+
+    if config["CODE"].duplicated().any():
+        duplicates = config.loc[
+            config["CODE"].duplicated(keep=False), "CODE"
+        ].unique()
+
+        raise ValueError(
+            f"Duplicate ancestry codes in configuration: {list(duplicates)}"
+        )
+
+    color_map = dict(zip(config["CODE"], config["COLOR"]))
+    ancestry_labels = dict(zip(config["CODE"], config["DESCRIPTION"]))
+
+    return color_map, ancestry_labels
+
 
 #-----------------------------
 def read_fai(fai_path):
@@ -142,6 +195,13 @@ def parse_args():
     parser.add_argument(
         "--fai", help="Optional FASTA index file to specify chromosome lengths (overrides built-in GRCh38).",
         required=False, type=str
+    )
+
+    parser.add_argument(
+        "--ancestry-config",
+        help="Optional TSV file defining ancestry codes, descriptions and colours.",
+        required=False,
+        type=str
     )
 
     return parser.parse_args()
@@ -231,7 +291,7 @@ def build_angles():
     return angles
 
 # -----------------------------
-def build(df, out_html, input_tsv, predictor):
+def build(df, out_html, input_tsv, predictor, color_map=COLOR_MAP, ancestry_labels=ANCESTRY_LABELS):
     """
     Construct the interactive ntRoot/korus Local Ancestry (LAI) visualization.
 
@@ -275,7 +335,7 @@ def build(df, out_html, input_tsv, predictor):
 
     dynamic_color_map = build_dynamic_ancestry_colors(
         ancestries,
-        COLOR_MAP,
+        color_map,
         UNSUPERVISED_PALETTE
     )
 
@@ -288,8 +348,8 @@ def build(df, out_html, input_tsv, predictor):
     pie_width  = 0.3
 
     def anc_color(anc):
-        if anc in COLOR_MAP:
-            return COLOR_MAP[anc]
+        if anc in color_map:
+            return color_map[anc]
         return dynamic_color_map.get(anc, "#999999")
 
     angles = build_angles()
@@ -362,8 +422,8 @@ def build(df, out_html, input_tsv, predictor):
 
     for anc in ancestries:
 
-        if anc in ANCESTRY_LABELS:
-            legend_name = f"{ANCESTRY_LABELS[anc]} ({anc})"
+        if anc in ancestry_labels:
+            legend_name = f"{ancestry_labels[anc]} ({anc})"
         else:
             legend_name = anc
 
@@ -403,7 +463,7 @@ def build(df, out_html, input_tsv, predictor):
 
                 t.append((t0 + t1) / 2)
                 w.append(t1 - t0) 
-                custom.append([chrom, int(r["start"]), int(r["end"]), ANCESTRY_LABELS.get(anc, anc)])
+                custom.append([chrom, int(r["start"]), int(r["end"]), ancestry_labels.get(anc, anc)])
 
             fig.add_trace(
                 go.Barpolar(
@@ -474,7 +534,7 @@ def build(df, out_html, input_tsv, predictor):
             pie_text.append("")
 
         pie_hover.append(
-            f"{ANCESTRY_LABELS.get(anc, anc)}<br>"
+            f"{ancestry_labels.get(anc, anc)}<br>"
             f"Genome-wide: {frac_pct[anc]:.1f}% ({frac_mb[anc]:.1f} Mb)<br><br>"
             f"{pie_chr_summary[anc]}"
     )
@@ -1204,13 +1264,24 @@ def main():
         # Override chromosome lengths if FASTA index provided
         read_fai(args.fai)
 
+    # Load ancestry configuration if provided
+    color_map = COLOR_MAP
+    ancestry_labels = ANCESTRY_LABELS
+
+    if args.ancestry_config:
+        color_map, ancestry_labels = read_ancestry_config(
+            args.ancestry_config
+        )
+
     df = load_data(args.input_tsv)
 
     build(
         df,
         args.output_html,
         args.input_tsv,
-        args.predictor
+        args.predictor,
+        color_map,
+        ancestry_labels
     )
 
 if __name__ == "__main__":
