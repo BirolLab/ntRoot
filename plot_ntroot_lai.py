@@ -139,6 +139,10 @@ def read_fai(fai_path):
             chrom, length_str = parts[0], parts[1]
             CHR_LENGTHS[chrom] = int(length_str)
 
+    CHR_LENGTHS = dict(
+        sorted(CHR_LENGTHS.items(), key=lambda x: int(x[0]))
+    )
+
 # ----------------------------
 def get_cluster_color(cluster_id, unique_clusters):
     """
